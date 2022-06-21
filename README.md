@@ -17,6 +17,17 @@ struct{
     Mat3x3 *zIdx = PosOrientation.zIdx;
 
     vec3 qIdx (th_Idxx, th_Idxy, th_Idxz); //joint angles in 3d
+    
+    //stand-in for 4x4 Tranformation Matrix.
+    //compute only if i > 0
+    Mat3x3 RIdx ( vec3 rx, vec3 ry, vec rz );
+    vec3 pLocalIdx = prev_joint.pLocalIdx + RIdx * link[idx].dL;
+
+
+    //local magnetisation
+
+    global_mag[i] = joint[i].mag * joint[i].RIdx;
+    
 
 } joint;
 
