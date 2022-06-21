@@ -1,13 +1,15 @@
-Start of the repo
+# Header
 
+## Dependecies
 
-# Dependecies
+* [Matrices: eigen](https://eigen.tuxfamily.org/dox/index.html)
 
-[Matrices: eigen](https://eigen.tuxfamily.org/dox/index.html)
+* [Optimisation: Nlopt](https://nlopt.readthedocs.io/en/latest/)
 
-# Datatype prototypes
+## Datatype prototypes
 
-## Joints Struct
+### Joints Struct
+
 ```cpp
 struct{
     const int idx; //position in joint chain
@@ -33,7 +35,8 @@ struct{
 
 ```
 
-## Link Struct
+### Link Struct
+
 ```cpp
 
 struct{
@@ -52,7 +55,8 @@ struct{
 
 ```
 
-## Position
+### Position
+
 ```cpp
 struct{
     const int idx;
