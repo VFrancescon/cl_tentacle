@@ -6,6 +6,8 @@
 
 * [Optimisation: Nlopt](https://nlopt.readthedocs.io/en/latest/)
 
+* [Plotting: MatplotLib](https://matplotlib-cpp.readthedocs.io/en/latest/)
+
 ## Datatype prototypes
 
 ### Joints Struct
