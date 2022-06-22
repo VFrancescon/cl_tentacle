@@ -28,9 +28,22 @@ int main(void){
 		iJoints[i].assignPosOri(iPosVec[i]);
 	}
 
+	//For to print the p and z members of each joint that has been instantiated
 	for(int i = 0; i < jointNo; i++) {
 		std::cout << "i: " << i << "\nPos\n" << *iJoints[i].p << "\nOrientation\n" << *iJoints[i].z << "\n\n";
 	}
+
+
+	std::vector<Link> iLinks(maxJoints);
+
+	for(int i = 0; i < jointNo-1; i++){
+		iLinks[i].assignPosOri(iPosVec[i], iPosVec[i+1]);
+	}
+
+	// for(int i = 0; i < jointNo; i++) {
+	// 	std::cout << "i: " << i << "\nPos1\n" << *iLinks[i].Pos1 << "\nPos2\n" << *iLinks[i].Pos2 << "\n\n";
+	// }
+
 
 	return 0;
 }

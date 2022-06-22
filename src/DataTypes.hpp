@@ -21,32 +21,11 @@ struct PosOrientation{
     Vector3f p; //!< position in space GLOBAL
     Matrix3f z; //!< orientation in space GLOBAL
 
-    PosOrientation();
-    PosOrientation(Vector3f Point, Matrix3f Orientation);
-
     void setPosition(Vector3f Point);
     void setOrientation(Matrix3f Orientation);
 
 
 };
-
-/**
- * @brief default ructor for P/Z struct
- * 
- * Initialises z and p to zeros
- */
-PosOrientation::PosOrientation(){
-    this->z = Matrix3f::Zero();
-    this->p = MatrixXf::Zero(3, 1);
-    std::cout << "Empty constructor called!\n";
-}
-
-
-PosOrientation::PosOrientation(Vector3f Point_, Matrix3f Orientation_){
-    this->p = Point_;
-    this->z = Orientation_;
-    std::cout << "Argumented constructor called!\n";
-}
 
 void PosOrientation::setPosition(Vector3f Point){
     this->p = Point;
@@ -55,9 +34,6 @@ void PosOrientation::setPosition(Vector3f Point){
 void PosOrientation::setOrientation(Matrix3f Orientation){
     this->z = Orientation;
 }
-
-
-
 
 
 /**
@@ -78,23 +54,8 @@ struct Joint{
     Vector3f pLocal; //!< Positional part of Transform matrix
 
     //global magnetisation here
-    Joint();
-    Joint(int index_, PosOrientation &PosOri_);
     void assignPosOri(PosOrientation &PosOri_);
 };
-
-Joint::Joint(){
-    std::cout << "Empty constructor\n";
-    this->p = nullptr;
-    this->z = nullptr;
-}
-
-Joint::Joint(int index_, PosOrientation &PosOri_){
-    this->index = index_;
-    this->p = &PosOri_.p;
-    this->z = &PosOri_.z;
-
-}
 
 void Joint::assignPosOri(PosOrientation &PosOri_){
     this->p = &PosOri_.p;
@@ -109,13 +70,23 @@ void Joint::assignPosOri(PosOrientation &PosOri_){
 struct Link{
     int index; //position in link chain
 
-    Vector3f Pos1, Pos2; //!< Joints i and i+1 that make up start and end of Link i
+    Vector3f *Pos1; //!< Joints i and i+1 that make up start and end of Link i
+    Vector3f *Pos2; //!< Joints i and i+1 that make up start and end of Link i
 
     int dL; //!< Link Length
     int d; //!< Link Diameter
     int E; //!< Young's modulus
     int v; //!< Poissant's ratio
 
-    Link();
-    Link(int index);
+    void assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_);
+
 };
+
+
+void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
+    this->Pos1 = &PosOri1_.p;
+    this->Pos2 = &PosOri2_.p;
+
+    std::cout << "\nPos1:\n" << &PosOri1_.p << "\nPos2:\n" << &PosOri2_.p << "\n";
+}
+
