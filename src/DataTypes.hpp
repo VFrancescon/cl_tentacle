@@ -54,6 +54,8 @@ struct Joint{
     Vector3f pLocal; //!< Positional part of Transform matrix
 
     //global magnetisation here
+    Vector3f GlobMag;
+
     void assignPosOri(PosOrientation &PosOri_);
 };
 
@@ -73,10 +75,10 @@ struct Link{
     Vector3f *Pos1; //!< Joints i and i+1 that make up start and end of Link i
     Vector3f *Pos2; //!< Joints i and i+1 that make up start and end of Link i
 
-    int dL; //!< Link Length
-    int d; //!< Link Diameter
+    float dL; //!< Link Length
+    float d; //!< Link Diameter
     int E; //!< Young's modulus
-    int v; //!< Poissant's ratio
+    float v; //!< Poissant's ratio
 
     void assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_);
 
@@ -87,6 +89,5 @@ void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos1 = &PosOri1_.p;
     this->Pos2 = &PosOri2_.p;
 
-    std::cout << "\nPos1:\n" << &PosOri1_.p << "\nPos2:\n" << &PosOri2_.p << "\n";
 }
 
