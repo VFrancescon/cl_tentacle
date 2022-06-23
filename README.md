@@ -67,5 +67,54 @@ struct{
 
 } Pos_Orientation;
 
+```
+
+## Eigen notation
+
+### Matrix Stacking
+
+```cpp
+//vertical
+
+Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
+
+Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
+
+Vector3f Vec3(11,22,33);
+Jp(all, 0) = Vec3;
+
+MatrixXf J(Jp.rows() + Jo.rows(), Jo.cols());
+J << Jp, 
+    Jo;
+
+//horizontal
+
+Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
+
+Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
+
+Vector3f Vec3(11,22,33);
+Jp(all, 0) = Vec3;
+
+MatrixXf J(Jp.rows(), Jp.rows() + Jo.cols());
+J << Jp, Jo;
+
+```
+
+### Slicing
+
+```cpp
+
+using namespace Eigen::placeholders;
+
+Matrix3f Mat;
+Vector3f Vec3
+
+//select column i
+
+Vec3 = Mat(all, i); 
+
+//select row j
+Vec3 = Mat(j, all);
 
 ```

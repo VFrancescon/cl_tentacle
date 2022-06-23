@@ -2,10 +2,17 @@
 #include <vector>
 #include "DataTypes.hpp"
 #include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Core>
+
+using namespace Eigen::placeholders;
+
 
 // Matrix3f RotationXYZ(Matrix3f src, float th_x_r, float th_y_r, float th_z_r);
 Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles);
 Matrix3f RotationZYX(Vector3f jointAngles);
+
+
+
 
 int main(void){
 	const int maxJoints = 5;
@@ -67,24 +74,41 @@ int main(void){
 		iJoints[i].Rotation = RotationZYX(iJoints[i-1].Rotation, iJoints[i-1].q);
 		iJoints[i].pLocal = iJoints[i-1].pLocal + iJoints[i].Rotation * Vector3f(0,0, -iLinks[i-1].dL);
 	}
-
 	//for loop to verify the DirectKinematics Function in the matlab code
-	for(int i = 0; i < jointNo; i++){
-		std::cout << "-------------------------------------------";
-		std::cout << "\ni " << i << " Rotation bit:\n" << iJoints[i].Rotation << "\nPosition bit\n" << iJoints[i].pLocal << "\n";
-	}
+	// for(int i = 0; i < jointNo; i++){
+	// 	std::cout << "-------------------------------------------";
+	// 	std::cout << "\ni " << i << " Rotation bit:\n" << iJoints[i].Rotation << "\nPosition bit\n" << iJoints[i].pLocal << "\n";
+	// }
+
+
+	Matrix3f Jp;
+	Matrix3f Jo;
+
+	Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
+
+	Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
+
+	Vector3f Vec3(11,22,33);
+	Jp(all, 0) = Vec3;
+
+	MatrixXf J(Jp.rows() + Jo.rows(), Jo.cols());
+	J << Jp, Jo;
+
+	std::cout << "\nJp stacked vertically with Jo\n" << J << "\n";
+	std::cout << "\nFirst column of Jp\n" << Vec3 << "\n";
 
 
 	return 0;
 }
 
 
-// Matrix3f RotationZYX(Matrix3f src, float th_z_r, float th_y_r, float th_x_r){
-// 	return src * AngleAxisf(th_z_r, Vector3f::UnitZ())
-// 		* AngleAxisf(th_y_r, Vector3f::UnitY())
-// 		* AngleAxisf(th_x_r, Vector3f::UnitX());
-// }
-
+/**
+ * @brief Rotates matrix src by angles in vector jointAngles in the ZYX order.
+ * 
+ * @param src matrix containing original position
+ * @param jointAngles column vector containing rotations. (X,Y,Z) 
+ * @return Matrix3f, Rotated matrix after being multiplied by angles jointAngles 
+ */
 Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles){
 	float AngleZ = jointAngles(2) * M_PI / 180;
 	float AngleY = jointAngles(1) * M_PI / 180;
