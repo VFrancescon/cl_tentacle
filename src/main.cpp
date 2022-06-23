@@ -65,10 +65,11 @@ int main(void){
 	iJoints[1].q = Vector3f(0,20,0);
 	iJoints[2].q = Vector3f(0,0,0);
 
+
+	//DIRECT KINEMATICS starts here
 	//assigning initial values to Transform matrix stand-in
 	iJoints[0].Rotation = Matrix3f::Identity();
 	iJoints[0].pLocal = Vector3f::Zero();
-
 
 	for(int i = 1; i < jointNo; i++){
 		iJoints[i].Rotation = RotationZYX(iJoints[i-1].Rotation, iJoints[i-1].q);
@@ -80,22 +81,91 @@ int main(void){
 	// 	std::cout << "\ni " << i << " Rotation bit:\n" << iJoints[i].Rotation << "\nPosition bit\n" << iJoints[i].pLocal << "\n";
 	// }
 
+	//Jacobian steps 1-3: set z and p for all joints
+	for(int i = 0; i < jointNo; i++){
+		
+		iPosVec[i].p = iJoints[i].pLocal;
+		
+		iPosVec[i].z(all,0) = iJoints[i].Rotation * Vector3f::UnitX();
+		
+		iPosVec[i].z(all,1) = AngleAxisf( iJoints[i].q(0) * M_PI / 180, Vector3f::UnitX() ) *  
+							iJoints[i].Rotation * Vector3f::UnitY();
+		
+		iPosVec[i].z(all,2) = AngleAxisf( iJoints[i].q(1) * M_PI / 180, Vector3f::UnitY() ) * 
+							AngleAxisf( iJoints[i].q(0) * M_PI / 180, Vector3f::UnitX() ) * 
+							iJoints[i].Rotation * Vector3f::UnitZ();
+	}
+	
+	//verification of steps 1-3
+	// for(int i = 0; i < jointNo; i++){
+	// 	std::cout << "\nP\n" << *iJoints[i].p << "\n";
+	// 	std::cout << "\nZ\n" << *iJoints[i].z << "\n";
+	// 	std::cout << "--------------------------------------------\n";
+	// }
 
-	Matrix3f Jp;
-	Matrix3f Jo;
 
-	Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
+	//jointNo = 3
+		// 	J 	= 	J00 	J01=0 	J02=0
+		// 	J 	=	J10 	J11		J12=0
+		//	J	=	J20		J21		J22
 
-	Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
+		// Given Jik
+		// ZcrossP = zp x (pk+1 - pk) <- General Jp 
+		// of k > i, J = 0
 
-	Vector3f Vec3(11,22,33);
-	Jp(all, 0) = Vec3;
+		//	i = 0 	-> 	pDiff = p1 - p0
+		//				ZcrossP = z0 x/y/z x (p1 - p0)
+		// >> J00
 
-	MatrixXf J(Jp.rows() + Jo.rows(), Jo.cols());
-	J << Jp, Jo;
+		//	i = x 	-> 	pDiff = p2 - p1
+		//				ZcrossP	= z0 x/y/z x (p2 - p1)
+		// >> J10
+		
+		//	i = 1 	-> 	pDiff = p2 - p1
+		//				ZcrossP = z1 x/y/z x (p2 - p1)
+		// >> J11
 
-	std::cout << "\nJp stacked vertically with Jo\n" << J << "\n";
-	std::cout << "\nFirst column of Jp\n" << Vec3 << "\n";
+		//	i = x 	-> 	pDiff = p2 - p1
+		//				ZcrossP	= z0 x/y/z x (p2 - p1)
+		// >> J20
+		
+		//	i = x 	-> 	pDiff = p2 - p1
+		//				ZcrossP	= z0 x/y/z x (p2 - p1)
+		// >> J21
+		
+		//	i = 2 	-> 	pDiff = p3 - p2
+		//				ZcrossP = z2 x/y/z x (p3 - p2)
+		// >> J22
+
+	Matrix3f Jp, Jo;
+
+	MatrixXf Jacobian(jointNo*6, jointNo*3);
+
+	for(int i = 0; i < jointNo; i++){
+		//i goes vertically
+		for(int k = 0; k < jointNo; k++){
+			//k goes horizontally
+			std::cout << "i: " << i << " k: " << k << "\n";
+			if( k > i ) {
+				Jp = Matrix3f::Zero();
+				Jo = Matrix3f::Zero();
+			} else{
+				Vector3f pDiff = iPosVec[i+1].p - iPosVec[i].p;
+				std::vector<Vector3f> z1{iPosVec[k].z(all,0), iPosVec[k].z(all,1), iPosVec[k].z(all,2)};
+				std::vector<Vector3f> ZcrossP{z1[0].cross(pDiff), z1[1].cross(pDiff), z1[2].cross(pDiff)};
+				Jp << ZcrossP[0] , ZcrossP[1], ZcrossP[2];
+				Jo << z1[0], z1[1], z1[2];
+
+				
+			}
+			MatrixXf Jn( Jp.rows() + Jo.rows(), Jp.cols());	
+			Jn << Jp, 
+				Jo;
+			Jacobian(seq(0+i*6, 5+i*6), seq(0+k*3,2+k*3)) = Jn;
+
+		}
+	}
+	std::cout << "Full jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
 
 
 	return 0;

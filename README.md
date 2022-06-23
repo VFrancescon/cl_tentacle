@@ -74,30 +74,41 @@ struct{
 ### Matrix Stacking
 
 ```cpp
-//vertical
+
+Matrix3f Jp, Jp;
+Vector3f Vec3;
 
 Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
 
 Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
 
-Vector3f Vec3(11,22,33);
-Jp(all, 0) = Vec3;
+//vertical
 
 MatrixXf J(Jp.rows() + Jo.rows(), Jo.cols());
 J << Jp, 
     Jo;
 
+/*
+Jp stacked vertically with Jo
+1  2  3
+2  5  6
+3  8  9
+10 20 30
+40 50 60
+70 80 90
+*/
+
 //horizontal
-
-Jp << 1, 2, 3, 4, 5, 6,7 ,8, 9;
-
-Jo << 10, 20, 30, 40, 50, 60, 70, 80, 90;
-
-Vector3f Vec3(11,22,33);
-Jp(all, 0) = Vec3;
-
-MatrixXf J(Jp.rows(), Jp.rows() + Jo.cols());
+J(Jp.rows(), Jp.rows() + Jo.cols());
 J << Jp, Jo;
+
+/*
+Jp stacked vertically with Jo
+1  2  3 10 20 30
+2  5  6 40 50 60
+3  8  9 70 80 90
+
+*/
 
 ```
 
