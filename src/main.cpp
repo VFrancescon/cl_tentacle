@@ -10,8 +10,8 @@ using namespace Eigen::placeholders;
 // Matrix3f RotationXYZ(Matrix3f src, float th_x_r, float th_y_r, float th_z_r);
 Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles);
 Matrix3f RotationZYX(Vector3f jointAngles);
-
-
+void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoints, int jointNo);
+MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff);
 
 
 int main(void){
@@ -63,8 +63,8 @@ int main(void){
 	//assigning values to joint angles
 	iJoints[0].q = Vector3f(0,10,0);
 	iJoints[1].q = Vector3f(0,20,0);
-	iJoints[2].q = Vector3f(0,30,0);
-	iJoints[3].q = Vector3f(0,00,0);
+	iJoints[2].q = Vector3f(0,00,0);
+	// iJoints[3].q = Vector3f(0,00,0);
 
 
 	//DIRECT KINEMATICS starts here
@@ -82,7 +82,22 @@ int main(void){
 	// 	std::cout << "\ni " << i << " Rotation bit:\n" << iJoints[i].Rotation << "\nPosition bit\n" << iJoints[i].pLocal << "\n";
 	// }
 
-	//Jacobian steps 1-3: set z and p for all joints
+	Z_P_Precalc(iPosVec, iJoints, jointNo);
+	MatrixXf Jacobian = EvaluateJacobian(iPosVec, jointEff);
+	std::cout << "Full jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
+	
+
+	return 0;
+}
+
+/**
+ * @brief Precalculates axis unit vectors and positional vectors for Jacobian computation
+ * 
+ * @param iPosVec vector containing joint positions and axis orientation
+ * @param iJoints vector containing the joint's Transform matrix and pointers to iPosVec
+ * @param jointNo number of joints (+1 from effective joint as we count end effector)
+ */
+void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoints, int jointNo){
 	for(int i = 0; i < jointNo; i++){
 		
 		iPosVec[i].p = iJoints[i].pLocal;
@@ -96,18 +111,16 @@ int main(void){
 							AngleAxisf( iJoints[i].q(0) * M_PI / 180, Vector3f::UnitX() ) * 
 							iJoints[i].Rotation * Vector3f::UnitZ();	
 	}
-	
-	//verification of steps 1-3
-	// for(int i = 0; i < jointNo; i++){
-	// 	std::cout << "\nP\n" << *iJoints[i].p << "\n";
-	// 	std::cout << "\nZ\n" << *iJoints[i].z << "\n";
-	// 	std::cout << "--------------------------------------------\n";
-	// }
+}
 
-	//Steps 4-6: calculate subjacobians and stack them
-
-	//General note here
-
+/**
+ * @brief Evaluates the jacobian using orientations and positions containing in a vector of points
+ * 
+ * @param iPosVec vector contains Positions and Orientations
+ * @param jointEff Number of effective joints (discount end effector basically)
+ * @return MatrixXf size (joint)*6 x (jointEff)*3 containing the full Jacobian computed
+ */
+MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
 	/**
 	 * @note
 	 * 
@@ -147,10 +160,7 @@ int main(void){
 			Jacobian(seq(0+i*6, 5+i*6), seq(0+k*3,2+k*3)) = Jn;
 		}
 	}
-	// std::cout << "Full jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
-
-
-	return 0;
+	return Jacobian;
 }
 
 
@@ -169,16 +179,4 @@ Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles){
 	return src * AngleAxisf(AngleZ, Vector3f::UnitZ())
 		* AngleAxisf(AngleY, Vector3f::UnitY())
 		* AngleAxisf(AngleX, Vector3f::UnitX());
-}
-
-Matrix3f RotationZYX(Vector3f jointAngles){
-	float AngleZ = jointAngles(2) * M_PI / 180;
-	float AngleY = jointAngles(1) * M_PI / 180;
-	float AngleX = jointAngles(0) * M_PI / 180;
-
-	Matrix3f rotation = Matrix3f::Identity();
-	rotation = rotation * AngleAxisf(AngleZ, Vector3f::UnitZ())
-		* AngleAxisf(AngleY, Vector3f::UnitY())
-		* AngleAxisf(AngleX, Vector3f::UnitX());
-	return rotation ;
 }
