@@ -17,6 +17,9 @@
 using namespace Eigen::placeholders;
 
 
+
+
+
 // Matrix3d RotationXYZ(Matrix3d src, double th_x_r, double th_y_r, double th_z_r);
 Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles);
 Matrix3d RotationZYX(Vector3d jointAngles);
@@ -24,6 +27,12 @@ void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoin
 MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff);
 MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int jointEff );
 MatrixXd StackDiagonals(std::vector<Matrix3d> matrices);
+
+
+
+
+MatrixXd MagWrench(std::vector<Joint> &iJoints, int jointEff);
+MatrixXd MagWrenchMap(Vector3d &Mag);
 
 int main(void){
 	const int maxJoints = 5;
@@ -93,11 +102,57 @@ int main(void){
 	Z_P_Precalc(iPosVec, iJoints, jointNo);
 	MatrixXd Jacobian = EvaluateJacobian(iPosVec, jointEff);
 	Jacobian.transposeInPlace();
+	//Verified transposed Jacobian
 	// std::cout << "Full Transposed jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
 	
-	MatrixXd MWrench = MechWrench(iLinks, iJoints, jointEff);
-	std::cout << "MWrench stacked:\n" << MWrench << "\n"; 
+	MatrixXd MeWrench = MechWrench(iLinks, iJoints, jointEff);
+	//Verifies the mech wrench
+	// std::cout << "MWrench:\n" << MWrench << "\n"; 
+
+
+
 	return 0;
+}
+
+MatrixXd MagWrench(std::vector<Joint> &iJoints, int jointEff){
+	
+	Vector3d Mag;
+	MatrixXd AppliedU(6, jointEff);
+	MatrixXd Wrench(6, jointEff);
+	for(int i = 0; i < jointEff; i++){
+		Mag = iJoints[i].Rotation * iJoints[i].LocMag;
+		Wrench(all, i) = MagWrenchMap(Mag) * AppliedU;
+		
+	}
+
+	return Wrench;
+}
+
+/**
+ * @brief Creates a map from magnetisation to wrench (taken from Salmanipour & Diller 2018 - Eight-Degrees-of-Freedom Remote Actuation of Small Magnetic Mechanisms)
+ * 
+ * @param Mag 
+ * @return MatrixXd 
+ */
+MatrixXd MagWrenchMap(Vector3d &Mag){
+	MatrixXd forceMap(3, 5);
+	Matrix3d torqueMap;
+
+
+	forceMap << Mag(0), Mag(1), Mag(2),    0   ,   0   ,
+				   0  , Mag(0),   0   ,  Mag(1), Mag(2),
+			   -Mag(2),    0  , Mag(0), -Mag(2), Mag(1); 
+
+	torqueMap << 0, -Mag(2), Mag(1),
+				Mag(2), 0, -Mag(0),
+				-Mag(1), Mag(0), 0;
+
+	MatrixXd S(6 ,8);
+	S = MatrixXd::Zero(6,8);
+	S(seq(0,2), seq(0,4)) = forceMap;
+	S(seq(3,5), seq(5,7)) = torqueMap;
+	return S; 	
+
 }
 
 MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int jointEff ){
@@ -136,6 +191,34 @@ MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int 
 
 	return MWrench;
 }
+
+
+void RotateUm(Vector3d StartingOrientation, MatrixXd appliedField, std::vector<Vector3d> magnetisation, int jointEff){
+	double AngleX, AngleY, AngleZ;
+	AngleX = StartingOrientation[0] * M_PI / 180;
+	AngleY = StartingOrientation[1] * M_PI / 180;
+	AngleZ = StartingOrientation[2] * M_PI / 180;
+
+	Matrix3d RotationMat = Matrix3d::Ones() * AngleAxisd(AngleY, Vector3d::UnitY())
+		* AngleAxisd(AngleX, Vector3d::UnitX())
+		* AngleAxisd(AngleZ, Vector3d::UnitZ());
+
+	//fieldsGlob = appliedField(5:7)
+
+	//gradientsGlob = appliedField(0:3) 
+	//gradientsGlob = big block of stuff
+
+	//for i < jointEfff
+		//fieldLocal = RotationMat * fieldsGlob
+		//gradientLocal = RotationMat * gradientsGlob * RotationMat'
+		//MagnetisationLocal = RotationMat * MagnetisationGlobal
+
+		//stack field and gradient stuff
+}
+
+
+
+
 
 
 /**
@@ -182,8 +265,8 @@ MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
 	 * 
 	 * Also the 'stacking' of the full jacobian is actually done by 
 	 * initialising an empty Mat of the correct size and filling in the blocks
-	 * stacking in the Matrix algebra library we use is possible
-	 * just a pain, so filling is good enough, probably.
+	 * stacking in the Matrix algebra library we use is possible, but
+	 * a pain, so filling is good enough, probably.
 	 */
 
 	Matrix3d Jp, Jo;
@@ -229,6 +312,12 @@ Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles){
 		* AngleAxisd(AngleX, Vector3d::UnitX());
 }
 
+/**
+ * @brief Creates a diagonal matrix by stacking 3x3 matrices contained in vector matrices
+ * 
+ * @param matrices vector containing n 3x3 matrices
+ * @return MatrixXd - 3*n, 3*n Matrix containing the diagonal stack
+ */
 MatrixXd StackDiagonals(std::vector<Matrix3d> matrices){
 	MatrixXd diagonal(matrices.size()*3, matrices.size()*3);
 	for(size_t i = 0; i < matrices.size(); i++){

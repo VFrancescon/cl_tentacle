@@ -55,6 +55,7 @@ struct Joint{
 
     //global magnetisation here
     Vector3d GlobMag;
+    Vector3d LocMag;
 
     void assignPosOri(PosOrientation &PosOri_);
 };
@@ -90,4 +91,3 @@ void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos2 = &PosOri2_.p;
 
 }
-
