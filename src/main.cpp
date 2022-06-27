@@ -1,3 +1,13 @@
+/**
+ * @file main.cpp
+ * @author Vittorio Francescon (vittorio.francescon@gmail.com)
+ * @brief Development file for the computation of Jacobians and wrenches
+ * @version 0.5
+ * @date 24-06-2022
+ * 
+ * 
+ */
+
 #include <iostream>
 #include <vector>
 #include "DataTypes.hpp"
@@ -7,25 +17,23 @@
 using namespace Eigen::placeholders;
 
 
-// Matrix3f RotationXYZ(Matrix3f src, float th_x_r, float th_y_r, float th_z_r);
-Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles);
-Matrix3f RotationZYX(Vector3f jointAngles);
+// Matrix3d RotationXYZ(Matrix3d src, double th_x_r, double th_y_r, double th_z_r);
+Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles);
+Matrix3d RotationZYX(Vector3d jointAngles);
 void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoints, int jointNo);
-MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff);
-
+MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff);
+MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int jointEff );
+MatrixXd StackDiagonals(std::vector<Matrix3d> matrices);
 
 int main(void){
 	const int maxJoints = 5;
-	int jointNo = 4;
+	int jointNo = 3;
 	int linkNo = jointNo - 1;
 	int jointEff = linkNo;
-	// PosOrientation Pos1, Pos2, Pos3, Pos4, Pos5;
-	// Joint Joint1, Joint2, Joint3, Joint4, Joint5;
-	// std::vector<PosOrientation> Pos(10);
 
 	std::vector<PosOrientation> iPosVec(maxJoints); //initialises p as (0,0,0).t
-	Vector3f a(3,2,1);
-	Matrix3f b;
+	Vector3d a(3,2,1);
+	Matrix3d b;
 	b << 1, 2, 3, 4, 5, 6, 7, 8, 9;
 	
 	for(int i = 0; i < jointNo; i++){
@@ -39,7 +47,7 @@ int main(void){
 		iJoints[i].assignPosOri(iPosVec[i]);
 	}
 
-	//For to print the p and z members of each joint that has been instantiated
+	//For loop to print the p and z members of each joint that has been instantiated
 	// for(int i = 0; i < jointNo; i++) {
 	// 	std::cout << "i: " << i << "\nPos\n" << *iJoints[i].p << "\nOrientation\n" << *iJoints[i].z << "\n\n";
 	// }
@@ -55,26 +63,26 @@ int main(void){
 		iLinks[i].v = 0.43;
 	}
 
-	//For to print the Pos1 and Pos2 of each link that has been instantiated
+	//For loop to print the Pos1 and Pos2 of each link that has been instantiated
 	// for(int i = 0; i < linkNo; i++) {
 	// 	std::cout << "i: " << i << "\nPos1\n" << *iLinks[i].Pos1 << "\nPos2\n" << *iLinks[i].Pos2 << "\n\n";
 	// }
 
 	//assigning values to joint angles
-	iJoints[0].q = Vector3f(0,10,0);
-	iJoints[1].q = Vector3f(0,20,0);
-	iJoints[2].q = Vector3f(0,00,0);
-	// iJoints[3].q = Vector3f(0,00,0);
+	iJoints[0].q = Vector3d(0,10,0);
+	iJoints[1].q = Vector3d(0,20,0);
+	iJoints[2].q = Vector3d(0,0,0);
+	// iJoints[3].q = Vector3d(0,00,0);
 
 
 	//DIRECT KINEMATICS starts here
 	//assigning initial values to Transform matrix stand-in
-	iJoints[0].Rotation = Matrix3f::Identity();
-	iJoints[0].pLocal = Vector3f::Zero();
+	iJoints[0].Rotation = Matrix3d::Identity();
+	iJoints[0].pLocal = Vector3d::Zero();
 
 	for(int i = 1; i < jointNo; i++){
 		iJoints[i].Rotation = RotationZYX(iJoints[i-1].Rotation, iJoints[i-1].q);
-		iJoints[i].pLocal = iJoints[i-1].pLocal + iJoints[i].Rotation * Vector3f(0,0, -iLinks[i-1].dL);
+		iJoints[i].pLocal = iJoints[i-1].pLocal + iJoints[i].Rotation * Vector3d(0,0, -iLinks[i-1].dL);
 	}
 	//for loop to verify the DirectKinematics Function in the matlab code
 	// for(int i = 0; i < jointNo; i++){
@@ -83,12 +91,52 @@ int main(void){
 	// }
 
 	Z_P_Precalc(iPosVec, iJoints, jointNo);
-	MatrixXf Jacobian = EvaluateJacobian(iPosVec, jointEff);
-	std::cout << "Full jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
+	MatrixXd Jacobian = EvaluateJacobian(iPosVec, jointEff);
+	Jacobian.transposeInPlace();
+	// std::cout << "Full Transposed jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
 	
-
+	MatrixXd MWrench = MechWrench(iLinks, iJoints, jointEff);
+	std::cout << "MWrench stacked:\n" << MWrench << "\n"; 
 	return 0;
 }
+
+MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int jointEff ){
+	MatrixXd deflections(3*jointEff,1);
+	
+	//stacks joint angles into a 3*N column for later computation
+	for(int i = 0; i < jointEff; i++){
+		deflections(seq(0+i*3, 2+(i*3)), all) = iJoints[i].q;
+	}
+
+	std::vector<Matrix3d> K_vec;
+	
+	//calculates the stiffness matrix per given joint
+	for(int i = 0; i < jointEff; i++){
+		double lRadius = iLinks[i].d / 2;
+		double I = M_PI_4 * lRadius * lRadius * lRadius * lRadius;
+		double G = iLinks[i].E / (2* (iLinks[i].v + 1) );
+		double J = M_PI_2 * lRadius * lRadius * lRadius * lRadius;
+		double Kb = iLinks[i].E*I/iLinks[i].dL;
+		double Kt = G*J/iLinks[i].dL;
+		Matrix3d K = Matrix3d::Zero();
+		K(0,0) = Kb;
+		K(1,1) = Kb;
+		K(2,2) = Kt;
+		K_vec.push_back (K);
+	}
+	
+	//stacks all stiffness matrices in a diagonal matrix
+	MatrixXd KDiagonal;
+	KDiagonal = StackDiagonals(K_vec);
+
+	MatrixXd StackedWrench(3*jointEff, 1);
+	StackedWrench = -KDiagonal * deflections;
+
+	MatrixXd MWrench = StackedWrench.reshaped(3, jointEff);
+
+	return MWrench;
+}
+
 
 /**
  * @brief Precalculates axis unit vectors and positional vectors for Jacobian computation
@@ -102,14 +150,14 @@ void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoin
 		
 		iPosVec[i].p = iJoints[i].pLocal;
 		
-		iPosVec[i].z(all,0) = iJoints[i].Rotation * Vector3f::UnitX();
+		iPosVec[i].z(all,0) = iJoints[i].Rotation * Vector3d::UnitX();
 		
-		iPosVec[i].z(all,1) = AngleAxisf( iJoints[i].q(0) * M_PI / 180, Vector3f::UnitX() ) *  
-							iJoints[i].Rotation * Vector3f::UnitY();
+		iPosVec[i].z(all,1) = AngleAxisd( iJoints[i].q(0) * M_PI / 180, Vector3d::UnitX() ) *  
+							iJoints[i].Rotation * Vector3d::UnitY();
 		
-		iPosVec[i].z(all,2) = AngleAxisf( iJoints[i].q(1) * M_PI / 180, Vector3f::UnitY() ) * 
-							AngleAxisf( iJoints[i].q(0) * M_PI / 180, Vector3f::UnitX() ) * 
-							iJoints[i].Rotation * Vector3f::UnitZ();	
+		iPosVec[i].z(all,2) = AngleAxisd( iJoints[i].q(1) * M_PI / 180, Vector3d::UnitY() ) * 
+							AngleAxisd( iJoints[i].q(0) * M_PI / 180, Vector3d::UnitX() ) * 
+							iJoints[i].Rotation * Vector3d::UnitZ();	
 	}
 }
 
@@ -118,9 +166,9 @@ void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoin
  * 
  * @param iPosVec vector contains Positions and Orientations
  * @param jointEff Number of effective joints (discount end effector basically)
- * @return MatrixXf size (joint)*6 x (jointEff)*3 containing the full Jacobian computed
+ * @return MatrixXd size (joint)*6 x (jointEff)*3 containing the full Jacobian computed
  */
-MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
+MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
 	/**
 	 * @note
 	 * 
@@ -138,23 +186,23 @@ MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
 	 * just a pain, so filling is good enough, probably.
 	 */
 
-	Matrix3f Jp, Jo;
-	MatrixXf Jacobian(jointEff*6, jointEff*3);
+	Matrix3d Jp, Jo;
+	MatrixXd Jacobian(jointEff*6, jointEff*3);
 	for(int i = 0; i < jointEff; i++){
 		//i goes vertically
 		for(int k = 0; k < jointEff; k++){
 			//k goes horizontally
 			if( k > i ) {
-				Jp = Matrix3f::Zero();
-				Jo = Matrix3f::Zero();
+				Jp = Matrix3d::Zero();
+				Jo = Matrix3d::Zero();
 			} else{
-				Vector3f pDiff = iPosVec[i+1].p - iPosVec[k].p;
-				std::vector<Vector3f> z1{iPosVec[k].z(all,0), iPosVec[k].z(all,1), iPosVec[k].z(all,2)};
-				std::vector<Vector3f> ZcrossP{z1[0].cross(pDiff), z1[1].cross(pDiff), z1[2].cross(pDiff)};
+				Vector3d pDiff = iPosVec[i+1].p - iPosVec[k].p;
+				std::vector<Vector3d> z1{iPosVec[k].z(all,0), iPosVec[k].z(all,1), iPosVec[k].z(all,2)};
+				std::vector<Vector3d> ZcrossP{z1[0].cross(pDiff), z1[1].cross(pDiff), z1[2].cross(pDiff)};
 				Jp << ZcrossP[0] , ZcrossP[1], ZcrossP[2];
 				Jo << z1[0], z1[1], z1[2];	
 			}
-			MatrixXf Jn( Jp.rows() + Jo.rows(), Jp.cols());	
+			MatrixXd Jn( Jp.rows() + Jo.rows(), Jp.cols());	
 			Jn << Jp, 
 				Jo;
 			Jacobian(seq(0+i*6, 5+i*6), seq(0+k*3,2+k*3)) = Jn;
@@ -169,14 +217,24 @@ MatrixXf EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
  * 
  * @param src matrix containing original position
  * @param jointAngles column vector containing rotations. (X,Y,Z) 
- * @return Matrix3f, Rotated matrix after being multiplied by angles jointAngles 
+ * @return Matrix3d, Rotated matrix after being multiplied by angles jointAngles 
  */
-Matrix3f RotationZYX(Matrix3f src, Vector3f jointAngles){
-	float AngleZ = jointAngles(2) * M_PI / 180;
-	float AngleY = jointAngles(1) * M_PI / 180;
-	float AngleX = jointAngles(0) * M_PI / 180;
+Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles){
+	double AngleZ = jointAngles(2) * M_PI / 180;
+	double AngleY = jointAngles(1) * M_PI / 180;
+	double AngleX = jointAngles(0) * M_PI / 180;
 	
-	return src * AngleAxisf(AngleZ, Vector3f::UnitZ())
-		* AngleAxisf(AngleY, Vector3f::UnitY())
-		* AngleAxisf(AngleX, Vector3f::UnitX());
+	return src * AngleAxisd(AngleZ, Vector3d::UnitZ())
+		* AngleAxisd(AngleY, Vector3d::UnitY())
+		* AngleAxisd(AngleX, Vector3d::UnitX());
+}
+
+MatrixXd StackDiagonals(std::vector<Matrix3d> matrices){
+	MatrixXd diagonal(matrices.size()*3, matrices.size()*3);
+	for(size_t i = 0; i < matrices.size(); i++){
+		
+		diagonal( seq(i*3, 2+i*3), seq(i*3, 2+i*3)) = matrices[i];
+	
+	}
+	return diagonal;
 }

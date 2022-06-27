@@ -18,20 +18,20 @@ using namespace Eigen;
  */
 struct PosOrientation{
     int index; //!< position in the chain
-    Vector3f p; //!< position in space GLOBAL
-    Matrix3f z; //!< orientation in space GLOBAL
+    Vector3d p; //!< position in space GLOBAL
+    Matrix3d z; //!< orientation in space GLOBAL
 
-    void setPosition(Vector3f Point);
-    void setOrientation(Matrix3f Orientation);
+    void setPosition(Vector3d Point);
+    void setOrientation(Matrix3d Orientation);
 
 
 };
 
-void PosOrientation::setPosition(Vector3f Point){
+void PosOrientation::setPosition(Vector3d Point){
     this->p = Point;
 }
 
-void PosOrientation::setOrientation(Matrix3f Orientation){
+void PosOrientation::setOrientation(Matrix3d Orientation){
     this->z = Orientation;
 }
 
@@ -45,16 +45,16 @@ struct Joint{
     Joint * nextJoint; //!< Pointer to next joint (i+1)
     Joint * prevJoint; //!< Pointer to previous joint (i-1)
 
-    Vector3f *p; //!< joint position. Points to PosOrientation struct
-    Matrix3f *z; //!< joint orientation. Points to Posorientation struct
+    Vector3d *p; //!< joint position. Points to PosOrientation struct
+    Matrix3d *z; //!< joint orientation. Points to Posorientation struct
 
-    Vector3f q; //!< Global angle of joint
+    Vector3d q; //!< Global angle of joint
 
-    Matrix3f Rotation; //!< Rotation part of Transform matrix
-    Vector3f pLocal; //!< Positional part of Transform matrix
+    Matrix3d Rotation; //!< Rotation part of Transform matrix
+    Vector3d pLocal; //!< Positional part of Transform matrix
 
     //global magnetisation here
-    Vector3f GlobMag;
+    Vector3d GlobMag;
 
     void assignPosOri(PosOrientation &PosOri_);
 };
@@ -72,13 +72,13 @@ void Joint::assignPosOri(PosOrientation &PosOri_){
 struct Link{
     int index; //position in link chain
 
-    Vector3f *Pos1; //!< Joints i and i+1 that make up start and end of Link i
-    Vector3f *Pos2; //!< Joints i and i+1 that make up start and end of Link i
+    Vector3d *Pos1; //!< Joints i and i+1 that make up start and end of Link i
+    Vector3d *Pos2; //!< Joints i and i+1 that make up start and end of Link i
 
-    float dL; //!< Link Length
-    float d; //!< Link Diameter
+    double dL; //!< Link Length
+    double d; //!< Link Diameter
     int E; //!< Young's modulus
-    float v; //!< Poissant's ratio
+    double v; //!< Poissant's ratio
 
     void assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_);
 
