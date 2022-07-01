@@ -53,9 +53,17 @@ struct Joint{
     Matrix3d Rotation; //!< Rotation part of Transform matrix
     Vector3d pLocal; //!< Positional part of Transform matrix
 
-    //global magnetisation here
+    //magnetisation here
     Vector3d GlobMag;
     Vector3d LocMag;
+
+    //Global field and gradients
+    MatrixXd GlobGrad;
+    Vector3d GlobField;
+
+    //Local field and gradients
+    MatrixXd LocGrad;
+    Vector3d LocField;
 
     void assignPosOri(PosOrientation &PosOri_);
 };

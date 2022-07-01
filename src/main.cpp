@@ -27,10 +27,7 @@ void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoin
 MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff);
 MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int jointEff );
 MatrixXd StackDiagonals(std::vector<Matrix3d> matrices);
-
-
-
-
+void RotateUm(Vector3d StartingOrientation, std::vector<Joint> &iJoints, int jointEff);
 MatrixXd MagWrench(std::vector<Joint> &iJoints, int jointEff);
 MatrixXd MagWrenchMap(Vector3d &Mag);
 
@@ -41,15 +38,6 @@ int main(void){
 	int jointEff = linkNo;
 
 	std::vector<PosOrientation> iPosVec(maxJoints); //initialises p as (0,0,0).t
-	Vector3d a(3,2,1);
-	Matrix3d b;
-	b << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-	
-	for(int i = 0; i < jointNo; i++){
-		iPosVec[i].setPosition(a);
-		iPosVec[i].setOrientation(b);
-	}
-
 	std::vector<Joint> iJoints(maxJoints);
 
 	for(int i = 0; i < jointNo; i++){
@@ -193,7 +181,7 @@ MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int 
 }
 
 
-void RotateUm(Vector3d StartingOrientation, MatrixXd appliedField, std::vector<Vector3d> magnetisation, int jointEff){
+void RotateUm(Vector3d StartingOrientation, std::vector<Joint> &iJoints, int jointEff){
 	double AngleX, AngleY, AngleZ;
 	AngleX = StartingOrientation[0] * M_PI / 180;
 	AngleY = StartingOrientation[1] * M_PI / 180;
@@ -203,17 +191,21 @@ void RotateUm(Vector3d StartingOrientation, MatrixXd appliedField, std::vector<V
 		* AngleAxisd(AngleX, Vector3d::UnitX())
 		* AngleAxisd(AngleZ, Vector3d::UnitZ());
 
-	//fieldsGlob = appliedField(5:7)
+	for(int i = 0; i < jointEff; i++){
+		Matrix3d dU_Global;
+		dU_Global <<	iJoints[i].GlobGrad(0), iJoints[i].GlobGrad(1), iJoints[i].GlobGrad(2),
+					  	iJoints[i].GlobGrad(1), iJoints[i].GlobGrad(3), iJoints[i].GlobGrad(4),
+						iJoints[i].GlobGrad(2), iJoints[i].GlobGrad(4), -iJoints[i].GlobGrad(0) - iJoints[i].GlobGrad(3);
+		Matrix3d dU_Local; 
+		dU_Local = RotationMat * dU_Global * RotationMat.transpose();
+		MatrixXd LocGrad(5,1);
+		LocGrad << 	dU_Local(0,0), dU_Local(0,1), dU_Local(0,2),
+					dU_Local(1,1), dU_Local(1,2);
+		iJoints[i].LocGrad = LocGrad;
+		iJoints[i].LocField = RotationMat * iJoints[i].GlobField;
+		iJoints[i].LocMag = RotationMat * iJoints[i].GlobMag;
+	}
 
-	//gradientsGlob = appliedField(0:3) 
-	//gradientsGlob = big block of stuff
-
-	//for i < jointEfff
-		//fieldLocal = RotationMat * fieldsGlob
-		//gradientLocal = RotationMat * gradientsGlob * RotationMat'
-		//MagnetisationLocal = RotationMat * MagnetisationGlobal
-
-		//stack field and gradient stuff
 }
 
 
