@@ -8,6 +8,7 @@
  */
 
 #include <math.h>
+#include <vector>
 #include <eigen3/Eigen/Dense>
 
 using namespace Eigen;
@@ -99,3 +100,10 @@ void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos2 = &PosOri2_.p;
 
 }
+
+
+
+struct AllJoints{
+    std::vector<Joint> JointsVec;
+    
+};
