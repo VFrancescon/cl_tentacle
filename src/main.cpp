@@ -13,8 +13,8 @@
 #include "DataTypes.hpp"
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Core>
-
-using namespace Eigen::placeholders;
+#include <eigen3/Eigen/QR>
+using namespace Eigen;
 
 
 
@@ -90,9 +90,12 @@ int main(void){
 	Z_P_Precalc(iPosVec, iJoints, jointNo);
 	MatrixXd Jacobian = EvaluateJacobian(iPosVec, jointEff);
 	Jacobian.transposeInPlace();
+
+	MatrixXd JacobianInv;
+	JacobianInv = Jacobian.completeOrthogonalDecomposition().pseudoInverse();
 	//Verified transposed Jacobian
 	// std::cout << "Full Transposed jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
-	
+	std::cout << "Jacobian inverse:\n" << JacobianInv << "\n";
 	MatrixXd MeWrench = MechWrench(iLinks, iJoints, jointEff);
 	//Verifies the mech wrench
 	// std::cout << "MWrench:\n" << MWrench << "\n"; 
