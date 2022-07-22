@@ -100,10 +100,3 @@ void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos2 = &PosOri2_.p;
 
 }
-
-
-
-struct AllJoints{
-    std::vector<Joint> JointsVec;
-    
-};
