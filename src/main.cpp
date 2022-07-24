@@ -16,10 +16,6 @@
 
 using namespace Eigen::placeholders;
 
-
-
-
-
 // Matrix3d RotationXYZ(Matrix3d src, double th_x_r, double th_y_r, double th_z_r);
 Matrix3d RotationZYX(Matrix3d src, Vector3d jointAngles);
 Matrix3d RotationZYX(Vector3d jointAngles);
