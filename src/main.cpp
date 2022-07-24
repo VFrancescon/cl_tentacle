@@ -108,7 +108,7 @@ MatrixXd MagWrench(std::vector<Joint> &iJoints, int jointEff){
 	MatrixXd Wrench(6, jointEff);
 	for(int i = 0; i < jointEff; i++){
 		Mag = iJoints[i].Rotation * iJoints[i].LocMag;
-		Wrench(all, i) = MagWrenchMap(Mag) * AppliedU;
+		Wrench(placeholders::all, i) = MagWrenchMap(Mag) * AppliedU;
 		
 	}
 
@@ -147,7 +147,7 @@ MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int 
 	
 	//stacks joint angles into a 3*N column for later computation
 	for(int i = 0; i < jointEff; i++){
-		deflections(seq(0+i*3, 2+(i*3)), all) = iJoints[i].q;
+		deflections(seq(0+i*3, 2+(i*3)), placeholders::all) = iJoints[i].q;
 	}
 
 	std::vector<Matrix3d> K_vec;
@@ -167,7 +167,7 @@ MatrixXd MechWrench(std::vector<Link> &iLinks, std::vector<Joint> &iJoints, int 
 		K_vec.push_back (K);
 	}
 	
-	//stacks all stiffness matrices in a diagonal matrix
+	//stacks placeholders::all stiffness matrices in a diagonal matrix
 	MatrixXd KDiagonal;
 	KDiagonal = StackDiagonals(K_vec);
 
@@ -224,12 +224,12 @@ void Z_P_Precalc(std::vector<PosOrientation> &iPosVec, std::vector<Joint> &iJoin
 		
 		iPosVec[i].p = iJoints[i].pLocal;
 		
-		iPosVec[i].z(all,0) = iJoints[i].Rotation * Vector3d::UnitX();
+		iPosVec[i].z(placeholders::all,0) = iJoints[i].Rotation * Vector3d::UnitX();
 		
-		iPosVec[i].z(all,1) = AngleAxisd( iJoints[i].q(0) * M_PI / 180, Vector3d::UnitX() ) *  
+		iPosVec[i].z(placeholders::all,1) = AngleAxisd( iJoints[i].q(0) * M_PI / 180, Vector3d::UnitX() ) *  
 							iJoints[i].Rotation * Vector3d::UnitY();
 		
-		iPosVec[i].z(all,2) = AngleAxisd( iJoints[i].q(1) * M_PI / 180, Vector3d::UnitY() ) * 
+		iPosVec[i].z(placeholders::all,2) = AngleAxisd( iJoints[i].q(1) * M_PI / 180, Vector3d::UnitY() ) * 
 							AngleAxisd( iJoints[i].q(0) * M_PI / 180, Vector3d::UnitX() ) * 
 							iJoints[i].Rotation * Vector3d::UnitZ();	
 	}
@@ -271,7 +271,7 @@ MatrixXd EvaluateJacobian(std::vector<PosOrientation> &iPosVec, int jointEff){
 				Jo = Matrix3d::Zero();
 			} else{
 				Vector3d pDiff = iPosVec[i+1].p - iPosVec[k].p;
-				std::vector<Vector3d> z1{iPosVec[k].z(all,0), iPosVec[k].z(all,1), iPosVec[k].z(all,2)};
+				std::vector<Vector3d> z1{iPosVec[k].z(placeholders::all,0), iPosVec[k].z(placeholders::all,1), iPosVec[k].z(placeholders::all,2)};
 				std::vector<Vector3d> ZcrossP{z1[0].cross(pDiff), z1[1].cross(pDiff), z1[2].cross(pDiff)};
 				Jp << ZcrossP[0] , ZcrossP[1], ZcrossP[2];
 				Jo << z1[0], z1[1], z1[2];	
