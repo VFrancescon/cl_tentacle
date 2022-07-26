@@ -34,7 +34,7 @@ int main(void){
 	int jointEff = linkNo;
 
 	std::vector<PosOrientation> iPosVec(maxJoints); //initialises p as (0,0,0).t
-	std::vector<Joint> iJoints(maxJoints);
+	std::vector<Joint> iJoints(jointNo);
 
 	for(int i = 0; i < jointNo; i++){
 		iJoints[i].assignPosOri(iPosVec[i]);
@@ -73,10 +73,29 @@ int main(void){
 	iJoints[0].Rotation = Matrix3d::Identity();
 	iJoints[0].pLocal = Vector3d::Zero();
 
-	for(int i = 1; i < jointNo; i++){
-		iJoints[i].Rotation = RotationZYX(iJoints[i-1].Rotation, iJoints[i-1].q);
-		iJoints[i].pLocal = iJoints[i-1].pLocal + iJoints[i].Rotation * Vector3d(0,0, -iLinks[i-1].dL);
+	for(int i = 0; i < jointEff; i++){
+		iJoints[i+1].Rotation = RotationZYX(iJoints[i].Rotation, iJoints[i].q);
+		iJoints[i+1].pLocal = iJoints[i].pLocal + iJoints[i+1].Rotation * Vector3d(0,0, -iLinks[i].dL);
+		std::cout << "i: " << i << " i+1: " << i+1 << "\nplocal\n" << iJoints[i+1].pLocal << "\n";
 	}
+
+	/*
+	Correct values:
+	
+	plocal:
+		-0.00173648
+				0
+		-0.00984808
+	plocal:
+		-0.00673648
+				0
+		-0.0185083
+
+	
+	*/
+
+
+
 	//for loop to verify the DirectKinematics Function in the matlab code
 	// for(int i = 0; i < jointNo; i++){
 	// 	std::cout << "-------------------------------------------";
@@ -91,7 +110,7 @@ int main(void){
 	JacobianInv = Jacobian.completeOrthogonalDecomposition().pseudoInverse();
 	//Verified transposed Jacobian
 	// std::cout << "Full Transposed jacobian of size " << Jacobian.rows() << " by " << Jacobian.cols() << " is:\n" << Jacobian << "\n\n"; 
-	std::cout << "Jacobian inverse:\n" << JacobianInv << "\n";
+	std::cout << "Jacobian:\n" << Jacobian.transpose() << "\n";
 	MatrixXd MeWrench = MechWrench(iLinks, iJoints, jointEff);
 	//Verifies the mech wrench
 	// std::cout << "MWrench:\n" << MWrench << "\n"; 
