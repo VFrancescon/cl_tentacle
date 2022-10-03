@@ -11,7 +11,11 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 # include_directories(${NLOPT_INCLUDE_DIRS})
 
 add_executable (main "src/main.cpp")
-add_executable( nlopt_test "src/nlopt_test.cpp")
 
 target_link_libraries (main Eigen3::Eigen)
-target_link_libraries(nlopt_test Eigen3::Eigen nlopt)
+
+file(GLOB_RECURSE DataTypes
+        "${CMAKE_SOURCE_DIR}/src/DataTypes.hpp")
+
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/DataTypes DESTINATION include)

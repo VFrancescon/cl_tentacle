@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <vector>
-#include "DataTypes.hpp"
+#include "DataTypes/DataTypes.hpp"
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/QR>
