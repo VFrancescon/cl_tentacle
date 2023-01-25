@@ -30,11 +30,11 @@ struct PosOrientation{
 
 };
 
-void PosOrientation::setPosition(Vector3d Point){
+inline void PosOrientation::setPosition(Vector3d Point){
     this->p = Point;
 }
 
-void PosOrientation::setOrientation(Matrix3d Orientation){
+inline void PosOrientation::setOrientation(Matrix3d Orientation){
     this->z = Orientation;
 }
 
