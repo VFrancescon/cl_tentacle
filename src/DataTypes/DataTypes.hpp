@@ -6,6 +6,8 @@
  * @date 21-06-2022
  * 
  */
+#ifndef TENTACLEDATATYPES
+#define TENTACLEDATATYPES
 
 #include <math.h>
 #include <vector>
@@ -100,3 +102,5 @@ void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos2 = &PosOri2_.p;
 
 }
+
+#endif
