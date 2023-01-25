@@ -71,7 +71,7 @@ struct Joint{
     void assignPosOri(PosOrientation &PosOri_);
 };
 
-void Joint::assignPosOri(PosOrientation &PosOri_){
+inline void Joint::assignPosOri(PosOrientation &PosOri_){
     this->p = &PosOri_.p;
     this->z = &PosOri_.z;
 }
@@ -97,7 +97,7 @@ struct Link{
 };
 
 
-void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
+inline void Link::assignPosOri(PosOrientation &PosOri1_, PosOrientation &PosOri2_){
     this->Pos1 = &PosOri1_.p;
     this->Pos2 = &PosOri2_.p;
 
